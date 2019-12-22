@@ -1,0 +1,250 @@
+from google.colab import drive
+drive.mount('/content/gdrive')
+module_path = "/content/gdrive/My Drive/cmb/"
+import os
+os.chdir(module_path)
+
+
+from google.colab import drive
+drive.mount('/content/gdrive')
+module_path = "/content/gdrive/My Drive/cmb/"
+import os
+os.chdir(module_path)
+
+DATADIR="/home/sara/Desktop/input/neutrinos"
+CATEGORIES=["2", "3", "4", "5", "6", "7", "8","9"]
+
+import matplotlib.pyplot as plt
+import matplotlib.cm as cm
+
+#cmap = plt.cm.jet
+#cmap.set_under('w')
+#cmap.set_bad('gray',1.)
+#making the cmap
+cmap=cm.RdBu_r
+cmap.set_under('w') #set background to white
+cmapseismic=cm.seismic
+cmapseismic.set_under('w') #set background to white
+
+
+for category in CATEGORIES:
+    path = os.path.join(DATADIR, category)
+    for img in os.listdir(path):
+        img_array = cv2.imread(os.path.join(path, img))
+        plt.imshow(img_array, cmap= cmap)
+        plt.show()
+        break
+        break
+        
+IMG_SIZE=500
+new_array=cv2.resize(img_array,(IMG_SIZE,IMG_SIZE))
+plt.imshow(new_array)
+plt.show()
+
+train_data=[]
+def create_training_data():
+    for category in CATEGORIES:
+        path = os.path.join(DATADIR, category)
+        class_num = (CATEGORIES.index(category))
+        for img in os.listdir(path):
+            try:
+                img_array = cv2.imread(os.path.join(path,img)) #cv2.IMREAD_GRAYSCALE)
+                new_array = cv2.resize(img_array, (IMG_SIZE, IMG_SIZE))
+                train_data.append([new_array, class_num]) #chaneged new to img
+            except Exception as e:
+                pass
+ 
+ create_training_data()
+ 
+ 
+import random
+random.shuffle(train_data)
+
+
+X=[]
+y=[]
+
+for feature, label in train_data:
+    X.append(feature)
+    y.append(label)
+    
+
+
+X=np.array(X).reshape(-1, IMG_SIZE, IMG_SIZE, 3) #3 is for colored patch & 1 for gray
+import pickle
+pickle_out=open("X.pickle","wb")
+pickle.dump(X, pickle_out)
+pickle_out.close()
+pickle_out=open("y.pickle","wb")
+pickle.dump(y, pickle_out)
+pickle_out.close()
+pickle_in=open("X.pickle", "rb")
+X=pickle.load(pickle_in)
+
+import pickle
+pickle_out=open("X.pickle","wb")
+pickle.dump(X, pickle_out)
+pickle_out.close()
+pickle_out=open("y.pickle","wb")
+pickle.dump(y, pickle_out)
+pickle_out.close()
+pickle_in=open("X.pickle", "rb")
+X=pickle.load(pickle_in)
+
+
+import tensorflow as tf
+#from tensorflow.keras.datasets import cifar10
+from keras.preprocessing.image import ImageDataGenerator
+from keras.models import Sequential
+from keras.layers import Dense, Dropout, Activation, Flatten
+from keras.layers import Conv2D, MaxPooling2D
+
+import pickle
+
+pickle_in = open("X.pickle","rb")
+X = pickle.load(pickle_in)
+
+pickle_in = open("y.pickle","rb")
+y = pickle.load(pickle_in)
+
+X = X/255.0
+
+
+# -- Initializing the values for the convolution neural network
+from keras.models import Sequential
+from keras.layers.core import Dense, Dropout, Activation, Flatten
+from keras.layers.convolutional import Conv2D
+from keras.layers.pooling import MaxPooling2D
+from keras.utils import np_utils
+from keras.optimizers import SGD
+from keras import backend as K
+nb_classes=8
+epoch = 30 
+
+batch_size = 64
+# number of convolutional filters to use
+nb_filters = 32
+# size of pooling area for max pooling
+nb_pool = 2
+# convolution kernel size
+nb_conv = 3
+
+# Vanilla SGD
+sgd = SGD(lr=0.1, decay=1e-6, momentum=0.9, nesterov=True)
+
+
+
+from keras.layers.normalization import BatchNormalization
+model = Sequential()
+#model.add(Conv2D(nb_filters, (nb_conv, nb_conv), padding='valid', input_shape=X.shape[1:]))
+model.add(Conv2D(64, (3, 3), padding='same', input_shape=X.shape[1:], name='block1_conv1'))
+model.add(BatchNormalization()) 
+model.add(Activation('relu'))
+
+model.add(Conv2D(64, (3, 3), padding='same', name='block1_conv2'))
+model.add(BatchNormalization()) 
+model.add(Activation('relu'))
+
+model.add(MaxPooling2D((2, 2), strides=(2, 2), name='block1_pool'))
+
+model.add(Conv2D(128, (3, 3), padding='same', name='block2_conv1'))
+model.add(BatchNormalization()) 
+model.add(Activation('relu'))
+
+model.add(Conv2D(128, (3, 3), padding='same', name='block2_conv2'))
+model.add(BatchNormalization()) 
+model.add(Activation('relu'))
+model.add(MaxPooling2D((2, 2), strides=(2, 2), name='block2_pool'))
+
+model.add(Conv2D(256, (3, 3), padding='same', name='block3_conv1'))
+model.add(BatchNormalization()) 
+model.add(Activation('relu'))
+
+model.add(Conv2D(256, (3, 3), padding='same', name='block3_conv2'))
+model.add(BatchNormalization()) 
+model.add(Activation('relu'))
+
+model.add(Conv2D(256, (3, 3), padding='same', name='block3_conv3'))
+model.add(BatchNormalization()) 
+model.add(Activation('relu'))
+
+model.add(Conv2D(256, (3, 3), padding='same', name='block3_conv4'))
+model.add(BatchNormalization()) 
+model.add(Activation('relu'))
+
+model.add(MaxPooling2D((2, 2), strides=(2, 2), name='block3_pool'))
+
+model.add(Conv2D(512, (3, 3), padding='same', name='block4_conv1'))
+model.add(BatchNormalization()) 
+model.add(Activation('relu'))
+
+model.add(Conv2D(512, (3, 3), padding='same', name='block4_conv2'))
+model.add(BatchNormalization()) 
+model.add(Activation('relu'))
+
+model.add(Conv2D(512, (3, 3), padding='same', name='block4_conv3'))
+model.add(BatchNormalization()) 
+model.add(Activation('relu'))
+
+model.add(Conv2D(512, (3, 3), padding='same', name='block4_conv4'))
+model.add(BatchNormalization()) 
+model.add(Activation('relu'))
+model.add(MaxPooling2D((2, 2), strides=(2, 2), name='block4_pool'))
+
+model.add(Conv2D(512, (3, 3), padding='same', name='block5_conv1'))
+model.add(BatchNormalization()) 
+model.add(Activation('relu'))
+
+model.add(Conv2D(512, (3, 3), padding='same', name='block5_conv2'))
+model.add(BatchNormalization()) 
+model.add(Activation('relu'))
+
+model.add(Conv2D(512, (3, 3), padding='same', name='block5_conv3'))
+model.add(BatchNormalization()) 
+model.add(Activation('relu'))
+
+model.add(Conv2D(512, (3, 3), padding='same', name='block5_conv4'))
+model.add(BatchNormalization()) 
+model.add(Activation('relu'))
+
+model.add(Flatten())
+
+model.add(Dense(4096))
+model.add(BatchNormalization()) 
+model.add(Activation('relu'))
+model.add(Dropout(0.5))
+
+model.add(Dense(4096, name='fc2'))
+model.add(BatchNormalization()) 
+model.add(Activation('relu'))
+model.add(Dropout(0.5))
+
+model.add(Dense(8))
+model.add(BatchNormalization()) 
+model.add(Activation('softmax'))
+
+
+hist= model.fit(X, y, batch_size=batch_size, validation_split=0.2, shuffle=True) #_data=(x_test, y_test),
+#model.compile(loss='categorical_crossentropy', optimizer='adam', metrics=['accuracy'])
+model.compile(loss='categorical_crossentropy',
+              optimizer=sgd,
+              metrics=['accuracy'])
+
+
+import matplotlib.pyplot as plt
+%matplotlib inline
+
+plt.figure()
+plt.xlabel('Epochs')
+plt.ylabel('Loss')
+plt.plot(hist.history['loss'])
+plt.plot(hist.history['val_loss'])
+plt.legend(['Training', 'Validation'])
+
+plt.figure()
+plt.xlabel('Epochs')
+plt.ylabel('Accuracy')
+plt.plot(hist.history['acc'])
+plt.plot(hist.history['val_acc'])
+plt.legend(['Training', 'Validation'], loc='lower right')
+
